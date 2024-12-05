@@ -71,10 +71,36 @@ local function isOrdered(update_map)
 	return true
 end
 
-local function add_middle_numbers()
+local function less_than(a, b)
+	for _, rule in ipairs(order_rules) do
+		local smaller = rule[1]
+		local greater = rule[2]
+		if a == smaller and b == greater then
+			return true
+		end
+		if a == greater and b == smaller then
+			return false
+		end
+	end
+	return false
+end
+
+function table:length()
+	local length = 0
+	for _, _ in pairs(self) do
+		length = length + 1
+	end
+end
+
+local function add_middle_numbers(sort)
 	local sum = 0
 	for i, update in ipairs(update_maps) do
-		if isOrdered(update) then
+		if isOrdered(update) and not sort then
+			local middle_index = (#updates[i] + 1) / 2
+			sum = sum + updates[i][middle_index]
+		end
+		if not isOrdered(update) and sort then
+			table.sort(updates[i], less_than)
 			local middle_index = (#updates[i] + 1) / 2
 			sum = sum + updates[i][middle_index]
 		end
@@ -82,4 +108,5 @@ local function add_middle_numbers()
 	return sum
 end
 
-print("part 1:", add_middle_numbers())
+print("part 1:", add_middle_numbers(false))
+print("part 2:", add_middle_numbers(true))
