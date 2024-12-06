@@ -30,7 +30,7 @@ local function char_at(lines, position)
 	return char
 end
 
-local function findStart(lines)
+local function find_start(lines)
 	for y, line in ipairs(lines) do
 		local x = string.find(line, "%^")
 		if x ~= nil then
@@ -67,7 +67,7 @@ end
 
 local function walk(lines)
 	local visited = {}
-	local position = findStart(lines)
+	local position = find_start(lines)
 	visited[position_string(position)] = true
 	local direction_index = 1
 	local next_position = step(position, direction_index)
@@ -87,9 +87,9 @@ local function same_position(p1, p2)
 	return p1.x == p2.x and p1.y == p2.y
 end
 
-local function has_loop(lines, new_obstruction)
+local function has_loop(lines, new_obstruction, start)
 	local visited = {}
-	local position = findStart(lines)
+	local position = start
 	local direction_index = 1
 	visited[log_string(position, direction_index)] = true
 	local next_position = step(position, direction_index)
@@ -118,9 +118,13 @@ local function count_visited(lines)
 end
 
 local function possible_obstacle_positions(lines)
+	local visited = walk(lines)
 	local possible_positions = {}
 	for y = 1, #lines - 1, 1 do
 		for x = 0, #lines[y], 1 do
+			if not visited[position_string({ x = x, y = y })] then
+				goto continue
+			end
 			local char = string.sub(lines[y], x, x)
 			if char == "#" or char == "^" then
 				goto continue
@@ -135,8 +139,9 @@ end
 local function try_obstacles(lines)
 	local confirmed_positions = 0
 	local possible_positions = possible_obstacle_positions(lines)
+	local start = find_start(lines)
 	for i, position in ipairs(possible_positions) do
-		if has_loop(lines, position) then
+		if has_loop(lines, position, start) then
 			confirmed_positions = confirmed_positions + 1
 		end
 		if i % 1000 == 0 then
