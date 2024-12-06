@@ -40,6 +40,14 @@ local function findStart(lines)
 	return nil
 end
 
+local function position_string(position)
+	return string.format("%d;%d", position.x, position.y)
+end
+
+local function log_string(position, direction_index)
+	return position_string(position) .. ";" .. direction_index
+end
+
 local function step(position, direction_index)
 	local directions = {
 		{ x = 0, y = -1 },
@@ -55,10 +63,6 @@ end
 
 local function turn90degs(direction_index)
 	return direction_index % 4 + 1
-end
-
-local function position_string(position)
-	return string.format("%d;%d", position.x, position.y)
 end
 
 local function walk(lines)
@@ -79,6 +83,32 @@ local function walk(lines)
 	return visited
 end
 
+local function same_position(p1, p2)
+	return p1.x == p2.x and p1.y == p2.y
+end
+
+local function has_loop(lines, new_obstruction)
+	local visited = {}
+	local position = findStart(lines)
+	local direction_index = 1
+	visited[log_string(position, direction_index)] = true
+	local next_position = step(position, direction_index)
+
+	while char_at(lines, next_position) ~= nil do
+		local next_char = char_at(lines, next_position)
+		if next_char == "#" or same_position(next_position, new_obstruction) then
+			direction_index = turn90degs(direction_index)
+		end
+		position = step(position, direction_index)
+		if visited[log_string(position, direction_index)] then
+			return true
+		end
+		visited[log_string(position, direction_index)] = true
+		next_position = step(position, direction_index)
+	end
+	return false
+end
+
 local function count_visited(lines)
 	local count = 0
 	for _ in pairs(walk(lines)) do
@@ -87,7 +117,39 @@ local function count_visited(lines)
 	return count
 end
 
-local content = read("example.txt")
+local function possible_obstacle_positions(lines)
+	local possible_positions = {}
+	for y = 1, #lines - 1, 1 do
+		for x = 0, #lines[y], 1 do
+			local char = string.sub(lines[y], x, x)
+			if char == "#" or char == "^" then
+				goto continue
+			end
+			table.insert(possible_positions, { x = x, y = y })
+			::continue::
+		end
+	end
+	return possible_positions
+end
+
+local function try_obstacles(lines)
+	local confirmed_positions = 0
+	local possible_positions = possible_obstacle_positions(lines)
+	for i, position in ipairs(possible_positions) do
+		if has_loop(lines, position) then
+			confirmed_positions = confirmed_positions + 1
+		end
+		if i % 1000 == 0 then
+			local progress = string.format("%.1f%% done calculating part 2", (i / #possible_positions * 100))
+			print(progress)
+		end
+	end
+	return confirmed_positions
+end
+
+local content = read("in.txt")
 local lines = content:split("\n")
 
 print("part 1:", count_visited(lines))
+print("calculating part 2...")
+print("part 2:", try_obstacles(lines))
