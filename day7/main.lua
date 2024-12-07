@@ -44,7 +44,7 @@ local function parse(path)
 	return equations
 end
 
-local function recurse(current, index, equation)
+local function recurse(current, index, equation, with_concat)
 	local numbers = equation[2]
 	local result = equation[1]
 	if index > #numbers then
@@ -53,25 +53,34 @@ local function recurse(current, index, equation)
 		end
 		return false
 	end
+	if with_concat then
+		local concatted = tonumber(current .. numbers[index])
+		return (
+			recurse(current + numbers[index], index + 1, equation, true)
+			or recurse(current * numbers[index], index + 1, equation, true)
+			or recurse(concatted, index + 1, equation, true)
+		)
+	end
 	return (
-		recurse(current + numbers[index], index + 1, equation)
-		or recurse(current * numbers[index], index + 1, equation)
+		recurse(current + numbers[index], index + 1, equation, false)
+		or recurse(current * numbers[index], index + 1, equation, false)
 	)
 end
 
-local function possibly_true(equation)
+local function possibly_true(equation, with_concat)
 	local numbers = equation[2]
-	return recurse(numbers[1], 2, equation)
+	return recurse(numbers[1], 2, equation, with_concat)
 end
 
-local function total_calibration_result(path)
+local function total_calibration_result(path, with_concat)
 	local total = 0
 	for _, equation in ipairs(parse(path)) do
-		if possibly_true(equation) then
+		if possibly_true(equation, with_concat) then
 			total = total + equation[1]
 		end
 	end
 	return total
 end
 
-print(total_calibration_result("example.txt"))
+print("part 1:", total_calibration_result("in.txt", false))
+print("part 2:", total_calibration_result("in.txt", true))
